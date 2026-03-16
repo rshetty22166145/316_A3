@@ -391,6 +391,9 @@ function updateFills() {
       const share =
         world && world > 0 ? ((pop / world) * 100).toFixed(2) : null;
       const gainColor = getLeaderboardValueColor(gain) || "#2a4f7f";
+
+      // Position tooltip relative to the viz container, not the viewport.
+      const svgBounds = svg.node().getBoundingClientRect();
       tooltip
         .style("opacity", 1)
         .html(
@@ -400,9 +403,18 @@ function updateFills() {
               share ? ` (${share}% of world)` : ""
             }</span><br>` +
             `<span class="temp" style="color:${gainColor}">+${fmt(gain)} people since ${baselineYear}</span>`
-        )
-        .style("left", `${event.clientX + 14}px`)
-        .style("top", `${event.clientY - 10}px`);
+        );
+
+      const tooltipNode = tooltip.node();
+      const tooltipWidth = tooltipNode ? tooltipNode.offsetWidth : 160;
+      const tooltipHeight = tooltipNode ? tooltipNode.offsetHeight : 48;
+
+      let x = event.clientX - svgBounds.left + 14;
+      let y = event.clientY - svgBounds.top - 10;
+      x = Math.max(8, Math.min(x, svgBounds.width - tooltipWidth - 8));
+      y = Math.max(8, Math.min(y, svgBounds.height - tooltipHeight - 8));
+
+      tooltip.style("left", `${x}px`).style("top", `${y}px`);
     })
     .on("mouseleave", () => {
       tooltip.style("opacity", 0);
