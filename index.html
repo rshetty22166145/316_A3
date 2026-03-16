@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Global Population Globe (1960–2020)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Global Population Globe, 1960–2020</h1>
+      <p>
+        Explore how country populations change over time. Rotate the globe,
+        hover to see values, and use the timeline controls to animate
+        year-by-year change.
+      </p>
+
+      <div class="layout">
+        <div class="card viz-container">
+          <svg id="temp-chart"></svg>
+          <div class="tooltip" id="tooltip" style="opacity: 0"></div>
+        </div>
+
+        <div class="card">
+          <div class="controls">
+            <div class="control-group">
+              <label>Year focus &amp; animation</label>
+              <div class="slider-row">
+                <input
+                  id="year-slider"
+                  type="range"
+                  min="1960"
+                  max="2020"
+                  value="1960"
+                  step="1"
+                />
+                <span class="slider-value" id="year-label">1960</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  margin-top: 4px;
+                "
+              >
+                <span class="hint">Drag to inspect a specific year.</span>
+                <button class="play-button paused" id="play-button">
+                  Play timeline
+                </button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label>Playback speed</label>
+              <div class="slider-row">
+                <input
+                  id="speed-slider"
+                  type="range"
+                  min="1"
+                  max="3"
+                  value="1"
+                  step="1"
+                />
+                <span class="slider-value" id="speed-label">1×</span>
+              </div>
+              <p class="hint">
+                Controls how many years per second the timeline advances when
+                playing.
+              </p>
+            </div>
+
+            <div class="control-group">
+              <label>How to read this graphic</label>
+              <p class="hint">
+                Each country is colored by absolute population gained since 1950
+                for the selected year. Deeper reds indicate larger gains. Drag
+                to rotate the globe and reveal other regions.
+              </p>
+            </div>
+
+            <div class="control-group">
+              <label>Top 5 by population growth</label>
+              <p class="hint">
+                Ranked by absolute population increase since 1950; each row also
+                shows that country's share of total world population growth.
+                Click a row to center that country on the globe.
+              </p>
+              <div id="leaderboard-body" class="info-panel-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card info-panel" id="country-panel">
+        <div class="info-panel-title">Country population details</div>
+        <div class="info-panel-body" id="country-panel-body">
+          <p class="hint">
+            Click a country on the globe to inspect its population in the
+            selected year and how much it has grown since 1950.
+          </p>
+        </div>
+        <button class="jump-button" id="jump-button" disabled>
+          Center globe on selected country
+        </button>
+      </div>
+
+      <footer>
+        Data: World Bank total population estimates by country, 1960–2020
+        (SP.POP.TOTL). Some territories or aggregate regions are omitted or
+        shown with a neutral color when no country-level geometry is available.
+      </footer>
+    </div>
+
+    <script src="population-globe.js"></script>
+  </body>
+</html>

@@ -1,0 +1,372 @@
+body {
+  font-family: "Inter", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif;
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(
+      1200px 700px at 10% -10%,
+      rgba(114, 173, 255, 0.2),
+      rgba(114, 173, 255, 0) 58%
+    ),
+    radial-gradient(
+      1000px 600px at 90% 0%,
+      rgba(127, 230, 205, 0.16),
+      rgba(127, 230, 205, 0) 62%
+    ),
+    linear-gradient(180deg, #f5f9ff 0%, #ecf3ff 55%, #e8f0ff 100%);
+  color: #1f2b3d;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 14px 18px;
+}
+
+h1 {
+  font-size: 1.55rem;
+  margin: 0 0 2px;
+  letter-spacing: 0.01em;
+  color: #0f2242;
+}
+
+p {
+  margin: 2px 0 6px;
+  max-width: 780px;
+  color: #40506b;
+  line-height: 1.3;
+}
+
+a {
+  color: #2f67b2;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1.6fr);
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.86),
+    rgba(246, 251, 255, 0.82)
+  );
+  backdrop-filter: blur(6px);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 30px rgba(37, 69, 125, 0.14);
+  border: 1px solid rgba(138, 167, 219, 0.35);
+}
+
+.viz-container {
+  position: relative;
+}
+
+svg {
+  width: 100%;
+  height: 380px;
+  overflow: visible;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5f7599;
+  margin-bottom: 6px;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: #6bb6ff;
+}
+
+.slider-value {
+  font-size: 0.85rem;
+  color: #1f3b66;
+  min-width: 54px;
+  text-align: right;
+}
+
+.hint {
+  font-size: 0.74rem;
+  color: #5f7193;
+  line-height: 1.28;
+}
+
+.play-button {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  background: linear-gradient(90deg, #62afff, #77f0cc);
+  color: #06111d;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(78, 164, 255, 0.28);
+}
+
+.play-button.paused {
+  background: rgba(120, 166, 235, 0.14);
+  color: #173865;
+  border: 1px solid rgba(120, 166, 235, 0.4);
+  box-shadow: none;
+}
+
+.globe-water {
+  fill: #dcecff;
+  stroke: #89aee0;
+  stroke-width: 0.6px;
+}
+
+.globe-land {
+  stroke: rgba(57, 88, 132, 0.45);
+  stroke-width: 0.35px;
+}
+
+.globe-graticule {
+  fill: none;
+  stroke: rgba(116, 149, 199, 0.4);
+  stroke-width: 0.4px;
+}
+
+.globe-outline {
+  fill: none;
+  stroke: rgba(95, 130, 184, 0.7);
+  stroke-width: 0.8px;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 10px;
+  padding: 7px 9px;
+  color: #1f2f47;
+  font-size: 0.78rem;
+  border: 1px solid rgba(139, 170, 224, 0.45);
+  box-shadow: 0 10px 28px rgba(37, 69, 125, 0.2);
+  white-space: nowrap;
+}
+
+.tooltip .country {
+  font-weight: 600;
+  color: #ffe8a9;
+}
+
+.tooltip .temp {
+  color: #85f0d3;
+}
+
+.legend-title {
+  font-size: 0.8rem;
+  fill: #28456f;
+}
+
+.legend-axis text {
+  fill: #3d5f8f;
+  font-size: 0.7rem;
+}
+
+.legend-axis line,
+.legend-axis path {
+  stroke: rgba(99, 131, 182, 0.6);
+}
+
+.info-panel {
+  margin-top: 10px;
+}
+
+.info-panel-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5f7599;
+  margin-bottom: 4px;
+}
+
+.info-panel-body {
+  font-size: 0.8rem;
+  color: #30435f;
+  line-height: 1.3;
+}
+
+.info-panel-body .country-name {
+  font-weight: 600;
+  color: #ffe8a9;
+}
+
+.info-panel-body .metric-label {
+  color: #5f7193;
+}
+
+.info-panel-body .metric-value {
+  color: #88f1d4;
+}
+
+.info-panel-body .metric-secondary {
+  color: #5f7193;
+}
+
+.jump-button {
+  margin-top: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  background: rgba(120, 166, 235, 0.14);
+  color: #173865;
+  border: 1px solid rgba(120, 166, 235, 0.4);
+  cursor: pointer;
+}
+
+.jump-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.trend-title {
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.trend-subtitle {
+  font-size: 0.78rem;
+  color: #aab6d6;
+  margin-bottom: 8px;
+}
+
+.trend-svg {
+  width: 100%;
+  height: 160px;
+}
+
+.trend-axis text {
+  fill: #d9e2ff;
+  font-size: 0.7rem;
+}
+
+.trend-axis line,
+.trend-axis path {
+  stroke: rgba(180, 194, 222, 0.5);
+}
+
+.trend-line-global {
+  fill: none;
+  stroke: #6ae7c4;
+  stroke-width: 1.8px;
+}
+
+.trend-line-country {
+  fill: none;
+  stroke: #fbbf77;
+  stroke-width: 1.4px;
+  stroke-dasharray: 4, 3;
+}
+
+.trend-year-line {
+  stroke: #fef0bb;
+  stroke-width: 1.1px;
+  stroke-dasharray: 4, 3;
+}
+
+footer {
+  margin-top: 12px;
+  font-size: 0.7rem;
+  color: #5f7193;
+}
+
+/* animated leaderboard styling */
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.leader-row {
+  display: grid;
+  grid-template-columns: 26px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: rgba(131, 170, 233, 0.11);
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 250ms ease,
+    background-color 250ms ease;
+  will-change: transform, opacity;
+  cursor: pointer;
+}
+
+.leader-row:hover {
+  background: rgba(132, 176, 245, 0.2);
+}
+
+.leader-row.selected {
+  background: rgba(255, 221, 138, 0.28);
+}
+
+.leader-rank {
+  color: #5d7397;
+  text-align: right;
+}
+
+.leader-name {
+  color: #203654;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-value {
+  color: #8bf3d7;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-delta {
+  min-width: 28px;
+  text-align: right;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-up {
+  color: #7df5ad;
+}
+
+.rank-down {
+  color: #ff8f8f;
+}
+
+.rank-same {
+  color: #6d84aa;
+}
+
