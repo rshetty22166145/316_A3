@@ -1,58 +1,72 @@
 # Global Population Globe (CSC316 A3)
 
-Interactive D3 visualization of country-level population change over time on an orthographic globe.
+Interactive D3 visualization for exploring country population growth over time with geographic context, animation, and lightweight storytelling.
 
 ## Overview
 
-This project visualizes World Bank population data (`1960-2020`) with:
-- A draggable, clickable globe (`D3 geoOrthographic`)
-- Year simulation with play/pause controls
-- Playback speed control (`1x`, `2x`, `3x`)
-- Country tooltip and details-on-demand panel
-- Dynamic Top 5 leaderboard by absolute population gain
-- Color encoding based on **population gained since 1950**
+The visualization combines an orthographic globe with coordinated controls and narrative context:
+
+- Country color encodes **absolute population gained since 1950**
+- Year controls: slider + play/pause animation + speed (`1x`, `2x`, `3x`)
+- Optional **auto-spin** globe toggle
+- Hover tooltip with population and gain details
+- Click-to-select + auto-center country
+- Top 5 leaderboard by absolute growth (plus share of world growth)
+- Country details panel with:
+  - population metrics
+  - REST Countries profile metadata
+  - flag / coat-of-arms images (when available)
+- Historical context timeline with important events and linked country jump buttons
 
 ## Data Sources
 
-- Population CSV: `API_SP.POP.TOTL_DS2_en_csv_v2_2763937.csv`
-  - World Bank indicator: `SP.POP.TOTL`
+- Primary dataset attribution (project source):  
+  [Kaggle - Historical Worldwide Countries Population](https://www.kaggle.com/datasets/aliaamiri/historical-worldwide-countries-population)
+- Population CSV used in app: `API_SP.POP.TOTL_DS2_en_csv_v2_2763937.csv` (World Bank indicator `SP.POP.TOTL`)
 - World geometry: GeoJSON from the D3 Graph Gallery world dataset
+- Country metadata API: [REST Countries v3.1](https://restcountries.com/)
 
 ## Interaction Summary
 
-- **Drag globe** to rotate.
-- **Hover country** to see population and gain since 1950.
-- **Click country** to:
-  - select it,
-  - auto-center the globe on it,
-  - update the details panel.
-- **Adjust year slider** for a specific year.
-- **Play timeline** to animate year progression.
-- **Use leaderboard rows** to jump to and center a country.
+- **Drag globe** to rotate manually.
+- **Spin globe** button toggles automatic rotation.
+- **Hover country** to view details-on-demand tooltip.
+- **Click country** to select, center, and update detail panels.
+- **Adjust year slider** for direct temporal querying.
+- **Play timeline** to animate year-by-year changes.
+- **Click leaderboard rows** to jump to high-growth countries.
+- **Click timeline event years/country chips** to navigate historical context.
 
 ## Implementation Notes (D3 Best Practices)
 
-- Uses `Map`-based keyed lookups for fast `country-year` retrieval.
-- Uses `d3.autoType` for robust numeric CSV parsing.
-- Uses D3 data join/update pattern for the animated leaderboard.
-- Keeps rendering and interaction logic separated by function (`updateFills`, `showCountryPanel`, `updateLeaderboard`, etc.).
-- Uses quantile-capped color domain for more readable visual contrast.
+- Uses `Map`-based keyed lookups for efficient country-year queries.
+- Uses `d3.autoType` for robust CSV numeric parsing.
+- Uses D3 join pattern for dynamic/animated leaderboard rendering.
+- Keeps logic modular (`updateFills`, `showCountryPanel`, `updateLeaderboard`, `updateEventContext`, etc.).
+- Uses capped quantile-based color scaling for readability across large value ranges.
+- Uses lightweight client-side caching for REST Countries API responses.
 
 ## Baseline Note
 
-The visualization colors and growth metrics are defined relative to **1950**.  
-Because the provided population dataset starts at `1960`, a 1950 country baseline is estimated from early-year growth (1960->1961) for consistency.
+Population growth is measured relative to **1950**.  
+Because the available population table starts at `1960`, a 1950 baseline is estimated from early-year growth (`1960 -> 1961`) for consistent comparison.
 
 ## Run Locally
-
-Use any local static server from this folder. Example:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open: [http://localhost:8000](http://localhost:8000)
+Open: [http://localhost:8000](http://localhost:8000)
+
+## Deployment (GitHub Pages)
+
+This repo includes `.github/workflows/deploy-pages.yml` to deploy static files to GitHub Pages via GitHub Actions.
+
+- Trigger: push to `main` or manual workflow run
+- Output URL format: `https://<account>.github.io/<repo>/`
 
 ## Disclaimer
 
-AI assistance was used to help clean up code structure, improve UI polish, and apply D3 visualization best practices.  
+AI assistance was used for code cleanup, UI polish, and D3 best-practice guidance.  
+Final feature decisions, integration, and validation were completed by the project author.

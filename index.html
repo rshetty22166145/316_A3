@@ -13,9 +13,20 @@
       <h1>Global Population Globe, 1960–2020</h1>
       <p>
         Explore how country populations change over time. Rotate the globe,
-        hover to see values, and use the timeline controls to animate
-        year-by-year change.
+        hover to see values, and use year controls to animate changes. The
+        context timeline links major world events to affected countries.
       </p>
+
+      <div class="card info-panel" id="events-panel">
+        <div class="info-panel-title">Population context timeline</div>
+        <div class="timeline-strip" id="events-strip"></div>
+        <div class="info-panel-body" id="event-detail">
+          <p class="hint">
+            Historical context appears here, including population impact and
+            related country links.
+          </p>
+        </div>
+      </div>
 
       <div class="layout">
         <div class="card viz-container">
@@ -47,9 +58,14 @@
                 "
               >
                 <span class="hint">Drag to inspect a specific year.</span>
-                <button class="play-button paused" id="play-button">
-                  Play timeline
-                </button>
+                <div style="display: flex; align-items: center; gap: 6px">
+                  <button class="play-button paused" id="play-button">
+                    Play timeline
+                  </button>
+                  <button class="play-button paused" id="spin-button">
+                    Spin globe
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -77,7 +93,8 @@
               <p class="hint">
                 Each country is colored by absolute population gained since 1950
                 for the selected year. Deeper reds indicate larger gains. Drag
-                to rotate the globe and reveal other regions.
+                to rotate, use Spin for auto-rotation, and click countries to
+                highlight and center them.
               </p>
             </div>
 
@@ -108,8 +125,9 @@
       </div>
 
       <footer>
-        Data: World Bank total population estimates by country, 1960–2020
-        (SP.POP.TOTL). Some territories or aggregate regions are omitted or
+        Data sources: Kaggle historical worldwide population dataset (using
+        SP.POP.TOTL series), world country GeoJSON, and REST Countries v3.1
+        profile metadata. Some territories or aggregate regions are omitted or
         shown with a neutral color when no country-level geometry is available.
       </footer>
     </div>

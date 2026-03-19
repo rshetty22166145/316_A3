@@ -2,70 +2,84 @@
 
 ## 1) Project Goal and Dataset
 
-This interactive visualization helps viewers explore how country populations changed over time, with a focus on **absolute population increase since 1950**. The goal is to support fast comparison across countries and years while still allowing details-on-demand for specific countries.
+This project explores how country populations changed over time, with a primary measure of **absolute population increase since 1950**. The visualization is designed for both quick scanning (ranking and color overview) and deeper inspection (country details, contextual events, and metadata).
 
-Dataset source (as requested):  
+Dataset source (project attribution):  
 [Kaggle: Historical Worldwide Countries Population](https://www.kaggle.com/datasets/aliaamiri/historical-worldwide-countries-population)
 
-The implementation uses the population CSV included in this repository and world geometry data for country boundaries.
+Implementation data assets:
+- Country population table (`SP.POP.TOTL`) stored locally in CSV form.
+- Country boundary geometry from a public world GeoJSON source.
+- Country profile metadata (capital, region, languages, currencies, flags) from REST Countries v3.1.
 
 ## 2) Design Rationale
 
-### Visual Encoding Choices
+### Visual Encodings
 
-- **Orthographic globe map** was chosen because the dataset is geographically distributed and country-level comparisons benefit from spatial context.
-- **Country color** encodes population gain since 1950, using a capped color domain to prevent extreme outliers from flattening the rest of the scale.
-- A **legend** is shown directly under the globe to explain the color mapping.
-- A **Top 5 leaderboard** provides a clear ranking for high-growth countries in the selected year.
+- **Orthographic globe**: preserves geographic context and supports region-based comparison.
+- **Choropleth color**: maps country growth since 1950 to a capped scale to avoid outlier domination.
+- **Legend**: explains scale directly below the globe.
+- **Top 5 leaderboard**: surfaces largest contributors quickly and complements the map.
 
-Alternatives considered:
-- A line chart for many countries was considered early, but it became visually dense and weaker for geographic exploration.
+I initially considered a dense multi-line chart, but the globe + leaderboard combination better balanced geographic context with ranking clarity.
 
-### Interaction and Animation Choices
+### Interaction and Animation
 
-- **Drag-to-rotate globe** enables geographic exploration and supports countries not visible in the default view.
-- **Hover tooltip** provides details-on-demand (country, year, population, and gain since 1950).
-- **Click-to-select country** updates the details panel and automatically centers the globe on that country.
-- **Year slider + play/pause + speed control** supports both direct querying and animated temporal exploration.
-- **Animated leaderboard updates** help communicate rank changes over time.
+- **Drag rotation** and **optional spin mode** support full-world exploration.
+- **Hover tooltip** gives details-on-demand.
+- **Click country** selects, highlights, and auto-centers the map.
+- **Year slider + play/pause + speed control** support dynamic query and animated trend exploration.
+- **Timeline context panel** adds event-based storytelling with year markers.
+- **Linked country chips in events** connect narrative context to direct map interaction.
 
-Why these interactions:
-- They combine low-friction exploration (hover, drag) with deliberate analysis (click, year controls).
-- Animation supports trend discovery, while static selection supports detailed reading.
+These interactions were chosen to combine exploratory analysis with guided narrative cues in a single interface.
 
-## 3) Development Process
+## 3) Storytelling Layer
+
+To strengthen narrative quality, I added a historical context timeline above the main view. For each highlighted event, the interface provides:
+- short historical description,
+- likely population-growth effect,
+- world-level context,
+- related country links that jump and center the globe.
+
+This turns the visualization from a pure dashboard into an explorable explanation that connects data patterns to major global events.
+
+## 4) Development Process
 
 ### Workflow
 
-Development proceeded iteratively:
-1. Basic map rendering and data loading.
-2. Year controls and color updates by year.
-3. Click/hover interactions and detail panels.
-4. Ranking panel with animated transitions.
-5. Visual design polish (layout, typography, color harmonization, compact view).
-6. Deployment pipeline setup for GitHub Pages.
+1. Built base globe rendering and data loading.
+2. Added temporal controls and color updates.
+3. Added tooltip, click selection, and country detail panel.
+4. Added Top 5 leaderboard with transitions.
+5. Added REST Countries metadata + flag/emblem media.
+6. Added historical event timeline and linked interactions.
+7. Polished UI and deployed using GitHub Pages pipeline.
 
 ### Technical Decisions
 
-- Used `Map`-based lookups (`country + year`) for fast updates.
-- Used `d3.autoType` to ensure numeric parsing of CSV fields.
-- Used D3 data joins for clean leaderboard enter/update/exit transitions.
-- Estimated 1950 baselines from early-year growth because the working CSV begins in 1960.
+- `Map`-based lookup structures for responsive country-year queries.
+- `d3.autoType` for reliable CSV parsing.
+- D3 data join pattern for dynamic list rendering.
+- Cached API responses to avoid repeated REST Countries fetches.
+- Estimated 1950 baseline (dataset begins in 1960) using early growth extrapolation.
 
+Most time was spent on country-name/code alignment, data consistency checks, and tuning visual scales for readability.
 
-Most time-consuming tasks:
-- aligning country identifiers between geometry and data,
-- ensuring robust parsing/filtering and valid numeric handling,
-- tuning visual scale/domain so color differences remain readable.
+## 5) AI Usage Disclosure
 
-## 4) LLM / AI Usage Disclosure
+AI assistance was used for:
+- D3 implementation patterns and refactoring support,
+- UI/interaction design iteration,
+- debugging and deployment workflow setup,
+- code and documentation cleanup.
 
-AI tools were used to assist with:
-- code cleanup and refactoring,
-- interaction implementation ideas,
-- D3.js best-practice patterns,
-- UI/UX styling polish,
-- deployment workflow setup
+Final implementation decisions, feature selection, and validation were completed by the author.
 
-All final integration decisions, debugging checks, and feature-level adjustments were reviewed and finalized by me.
+## 6) Sources
+
+- Kaggle dataset page:  
+  [Historical Worldwide Countries Population](https://www.kaggle.com/datasets/aliaamiri/historical-worldwide-countries-population)
+- D3.js: [https://d3js.org/](https://d3js.org/)
+- REST Countries API: [https://restcountries.com/](https://restcountries.com/)
 

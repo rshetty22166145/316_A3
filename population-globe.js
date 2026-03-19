@@ -4,12 +4,15 @@ const tooltip = d3.select("#tooltip");
 const slider = document.getElementById("year-slider");
 const sliderLabel = document.getElementById("year-label");
 const playButton = document.getElementById("play-button");
+const spinButton = document.getElementById("spin-button");
 const speedSlider = document.getElementById("speed-slider");
 const speedLabel = document.getElementById("speed-label");
 const countryPanelBody = document.getElementById("country-panel-body");
 const jumpButton = document.getElementById("jump-button");
 const trendSvg = d3.select("#trend-chart");
 const leaderboardBody = document.getElementById("leaderboard-body");
+const eventsStrip = document.getElementById("events-strip");
+const eventDetail = document.getElementById("event-detail");
 
 // --- Globe layout ---
 const width = 640;
@@ -51,8 +54,10 @@ const landGroup = g.append("g");
 // --- Data structures ---
 let countries; // GeoJSON features
 let animationTimer = null;
+let spinTimer = null;
 let currentYear = 1960;
 let currentSpeed = 1; // years per second
+const spinSpeedDegPerSec = 10;
 
 // population lookup: key "ISO-1960" -> pop
 const popByIsoYear = new Map();
@@ -60,7 +65,122 @@ const nameByIso = new Map();
 const globalPopByYear = new Map();
 const isoByNormalizedName = new Map();
 const baseline1950ByIso = new Map();
+const restCountryMetaByIso = new Map();
+const restCountryPendingByIso = new Map();
 let availableYears = [];
+
+const historicalEvents = [
+  {
+    year: 1961,
+    title: "Global vaccination momentum",
+    description:
+      "Large-scale immunization campaigns accelerate, improving child survival in many regions.",
+    populationEffect:
+      "Lower child mortality increases population momentum in many low- and middle-income countries.",
+    worldEffect:
+      "Global population growth remains high as life expectancy improves.",
+    countries: ["IND", "NGA", "IDN"],
+  },
+  {
+    year: 1969,
+    title: "Green Revolution expansion",
+    description:
+      "High-yield crops spread across Asia and Latin America, supporting food supply for growing populations.",
+    populationEffect:
+      "Food security improvements support sustained growth in densely populated agrarian countries.",
+    worldEffect:
+      "Global famine risk declines in several regions, supporting long-run growth.",
+    countries: ["IND", "PAK", "MEX"],
+  },
+  {
+    year: 1973,
+    title: "Oil crisis",
+    description:
+      "Energy shocks affect economic growth and migration patterns across multiple countries.",
+    populationEffect:
+      "Economic stress changes migration and fertility behavior, especially in import-dependent economies.",
+    worldEffect:
+      "Growth slows unevenly across regions as inflation and energy costs surge.",
+    countries: ["USA", "DEU", "JPN"],
+  },
+  {
+    year: 1979,
+    title: "China reforms begin",
+    description:
+      "Economic reforms reshape urbanization and long-run demographic trends in China.",
+    populationEffect:
+      "Rapid industrialization and urbanization alter household size and fertility decisions over time.",
+    worldEffect:
+      "Large-scale structural change in China influences global labor and migration dynamics.",
+    countries: ["CHN", "VNM", "KOR"],
+  },
+  {
+    year: 1989,
+    title: "End of Cold War era",
+    description:
+      "Political transitions in Europe and Eurasia influence migration and population distribution.",
+    populationEffect:
+      "Transition economies see shifts in fertility and emigration patterns.",
+    worldEffect:
+      "Cross-border movement increases in Europe, changing regional population balances.",
+    countries: ["RUS", "POL", "DEU"],
+  },
+  {
+    year: 1994,
+    title: "Cairo population conference",
+    description:
+      "Global policy emphasis shifts toward reproductive health and rights in population planning.",
+    populationEffect:
+      "Expanded family planning and education correlate with declining fertility in multiple regions.",
+    worldEffect:
+      "Policy framing broadens from pure growth control to health and development outcomes.",
+    countries: ["EGY", "BGD", "ETH"],
+  },
+  {
+    year: 2001,
+    title: "Globalization deepens",
+    description:
+      "Labor mobility and interconnected economies continue to reshape country-level demographic patterns.",
+    populationEffect:
+      "Urban hubs and migrant-destination countries absorb faster population increases.",
+    worldEffect:
+      "International migration becomes a larger driver of population change in many states.",
+    countries: ["USA", "ARE", "ESP"],
+  },
+  {
+    year: 2008,
+    title: "Global financial crisis",
+    description:
+      "Economic slowdown affects fertility, migration, and employment across many regions.",
+    populationEffect:
+      "Some countries experience delayed childbirth and lower migration inflows.",
+    worldEffect:
+      "Population growth remains positive globally but decelerates in several economies.",
+    countries: ["USA", "ESP", "GRC"],
+  },
+  {
+    year: 2015,
+    title: "UN Sustainable Development Goals",
+    description:
+      "SDGs include health, education, and inequality targets linked to long-term demographic change.",
+    populationEffect:
+      "Investments in education, health, and gender equity can reduce fertility and improve outcomes.",
+    worldEffect:
+      "Global demographic strategy shifts toward sustainable and inclusive growth.",
+    countries: ["IND", "NGA", "BRA"],
+  },
+  {
+    year: 2020,
+    title: "COVID-19 disruption",
+    description:
+      "Pandemic impacts mortality, migration, and population growth trajectories worldwide.",
+    populationEffect:
+      "Excess mortality and mobility restrictions disrupt growth patterns in many countries.",
+    worldEffect:
+      "Worldwide demographic trajectories diverge as health shocks and recovery rates vary.",
+    countries: ["USA", "IND", "BRA"],
+  },
+];
 
 // selection state
 let selectedIso = null;
@@ -341,6 +461,78 @@ function getLeaderboardValueColor(gain) {
   return c ? c.darker(0.6).formatHex() : null;
 }
 
+function formatLanguages(languages) {
+  if (!languages || typeof languages !== "object") return "n/a";
+  const vals = Object.values(languages).filter(Boolean);
+  return vals.length ? vals.join(", ") : "n/a";
+}
+
+function formatCurrencies(currencies) {
+  if (!currencies || typeof currencies !== "object") return "n/a";
+  const vals = Object.values(currencies)
+    .map((c) => {
+      const name = c && c.name ? c.name : null;
+      const symbol = c && c.symbol ? c.symbol : null;
+      if (name && symbol) return `${name} (${symbol})`;
+      return name || symbol || null;
+    })
+    .filter(Boolean);
+  return vals.length ? vals.join(", ") : "n/a";
+}
+
+function fetchCountryMeta(iso) {
+  if (!iso) return Promise.resolve(null);
+  if (restCountryMetaByIso.has(iso)) {
+    return Promise.resolve(restCountryMetaByIso.get(iso));
+  }
+  if (restCountryPendingByIso.has(iso)) {
+    return restCountryPendingByIso.get(iso);
+  }
+
+  const url =
+    `https://restcountries.com/v3.1/alpha/${iso}` +
+    "?fields=name,capital,region,subregion,languages,currencies,flags,coatOfArms,population,cca3";
+
+  const req = fetch(url)
+    .then((res) => {
+      if (!res.ok) throw new Error(`REST Countries error ${res.status}`);
+      return res.json();
+    })
+    .then((payload) => {
+      const row = Array.isArray(payload) ? payload[0] : payload;
+      if (!row || typeof row !== "object") {
+        restCountryMetaByIso.set(iso, { unavailable: true });
+        return restCountryMetaByIso.get(iso);
+      }
+      const meta = {
+        unavailable: false,
+        nameCommon: row.name && row.name.common ? row.name.common : null,
+        flag: row.flag || (row.flags && row.flags.emoji ? row.flags.emoji : ""),
+        flagPng: row.flags && row.flags.png ? row.flags.png : null,
+        coatPng: row.coatOfArms && row.coatOfArms.png ? row.coatOfArms.png : null,
+        capital:
+          Array.isArray(row.capital) && row.capital.length ? row.capital[0] : null,
+        region: row.region || null,
+        subregion: row.subregion || null,
+        languages: formatLanguages(row.languages),
+        currencies: formatCurrencies(row.currencies),
+      };
+      restCountryMetaByIso.set(iso, meta);
+      return meta;
+    })
+    .catch(() => {
+      const fallback = { unavailable: true };
+      restCountryMetaByIso.set(iso, fallback);
+      return fallback;
+    })
+    .finally(() => {
+      restCountryPendingByIso.delete(iso);
+    });
+
+  restCountryPendingByIso.set(iso, req);
+  return req;
+}
+
 function getIsoFromFeature(d) {
   const rawIso = (
     d.properties.iso_a3 ||
@@ -358,6 +550,122 @@ function getIsoFromFeature(d) {
   return rawIso;
 }
 
+function renderEventTimeline() {
+  if (!eventsStrip) return;
+  const data = historicalEvents
+    .filter((e) => availableYears.includes(e.year))
+    .sort((a, b) => a.year - b.year);
+  const dots = d3
+    .select(eventsStrip)
+    .selectAll("button.event-dot")
+    .data(data, (d) => d.year);
+
+  dots.exit().remove();
+
+  const dotsEnter = dots
+    .enter()
+    .append("button")
+    .attr("type", "button")
+    .attr("class", "event-dot")
+    .on("click", (_, d) => {
+      currentYear = d.year;
+      slider.value = currentYear;
+      sliderLabel.textContent = currentYear;
+      updateFills();
+      showCountryPanel();
+      updateCountryTrend();
+      updateLeaderboard();
+      updateTrendYearLine();
+      updateEventContext();
+    });
+
+  dotsEnter.merge(dots).text((d) => d.year);
+}
+
+function updateEventContext() {
+  if (!eventDetail) return;
+  const candidates = historicalEvents.filter((e) => availableYears.includes(e.year));
+  if (!candidates.length) {
+    eventDetail.innerHTML =
+      '<p class="hint">No historical events are configured for this range.</p>';
+    return;
+  }
+
+  let nearest = candidates[0];
+  let nearestDist = Math.abs(currentYear - nearest.year);
+  for (let i = 1; i < candidates.length; i += 1) {
+    const dist = Math.abs(currentYear - candidates[i].year);
+    if (dist < nearestDist) {
+      nearest = candidates[i];
+      nearestDist = dist;
+    }
+  }
+
+  d3.select(eventsStrip)
+    .selectAll("button.event-dot")
+    .classed("active", (d) => d.year === nearest.year);
+
+  const relation =
+    nearest.year === currentYear
+      ? "exact year match"
+      : `nearest context point (${Math.abs(nearest.year - currentYear)} year${
+          Math.abs(nearest.year - currentYear) === 1 ? "" : "s"
+        } away)`;
+
+  eventDetail.innerHTML = `
+    <p>
+      <span class="metric-label">${nearest.year}:</span>
+      <span class="metric-secondary"><strong>${nearest.title}</strong> &mdash; ${relation}</span>
+    </p>
+    <p class="hint">${nearest.description}</p>
+    <p>
+      <span class="metric-label">Population impact:</span>
+      <span class="metric-secondary">${nearest.populationEffect || "n/a"}</span>
+    </p>
+    <p>
+      <span class="metric-label">World context:</span>
+      <span class="metric-secondary">${nearest.worldEffect || "n/a"}</span>
+    </p>
+    <p>
+      <span class="metric-label">Explore related countries:</span>
+      <span class="event-country-links">
+        ${
+          Array.isArray(nearest.countries) && nearest.countries.length
+            ? nearest.countries
+                .map((iso) => {
+                  const label = nameByIso.get(iso) || iso;
+                  return `<button type="button" class="event-country-link" data-iso="${iso}">${label}</button>`;
+                })
+                .join("")
+            : '<span class="metric-secondary"> n/a</span>'
+        }
+      </span>
+    </p>
+  `;
+
+  if (Array.isArray(nearest.countries) && nearest.countries.length) {
+    eventDetail.querySelectorAll(".event-country-link").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const iso = btn.getAttribute("data-iso");
+        if (iso) focusCountryByIso(iso);
+      });
+    });
+  }
+}
+
+function focusCountryByIso(iso) {
+  if (!iso || !countries) return;
+  const feature = countries.find((f) => getIsoFromFeature(f) === iso);
+  if (!feature) return;
+  selectedIso = iso;
+  selectedFeature = feature;
+  jumpButton.disabled = false;
+  showCountryPanel();
+  updateCountryTrend();
+  centerOnSelected();
+  updateLeaderboard();
+}
+
 function redrawGlobe() {
   svg.select(".globe-water").attr("d", path);
   svg.select(".globe-graticule").attr("d", path);
@@ -367,8 +675,8 @@ function redrawGlobe() {
 // --- Globe fill, tooltip, click ---
 function updateFills() {
   if (!countries) return;
-  landGroup
-    .selectAll("path")
+  const landPaths = landGroup.selectAll("path");
+  landPaths
     .attr("fill", (d) => {
       const iso = getIsoFromFeature(d);
       const gain = getPopulationGainSince1950(iso, currentYear);
@@ -377,6 +685,7 @@ function updateFills() {
       }
       return colorScale(gain);
     })
+    .classed("is-selected", (d) => getIsoFromFeature(d) === selectedIso)
     .on("mousemove", (event, d) => {
       const iso = getIsoFromFeature(d);
       const pop = getPopulation(iso, currentYear);
@@ -429,6 +738,11 @@ function updateFills() {
       updateCountryTrend();
       updateLeaderboard();
     });
+
+  // Keep selected country above neighbors so the highlight is always visible.
+  if (selectedIso) {
+    landPaths.filter((d) => getIsoFromFeature(d) === selectedIso).raise();
+  }
 }
 
 // --- Country details panel ---
@@ -455,7 +769,16 @@ function showCountryPanel() {
     worldNow != null && worldBase != null ? worldNow - worldBase : null;
   const countryGainColor = getLeaderboardValueColor(countryGain) || "#2a4f7f";
   const worldGainColor = getLeaderboardValueColor(worldGain) || "#2a4f7f";
+  const restMeta = restCountryMetaByIso.get(iso) || null;
+  const metaLoading =
+    !restCountryMetaByIso.has(iso) && restCountryPendingByIso.has(iso);
   const fmt = d3.format(",.0f");
+
+  if (!restCountryMetaByIso.has(iso) && !restCountryPendingByIso.has(iso)) {
+    fetchCountryMeta(iso).then(() => {
+      if (selectedIso === iso) showCountryPanel();
+    });
+  }
 
   if (pop == null) {
     countryPanelBody.innerHTML = `
@@ -463,6 +786,11 @@ function showCountryPanel() {
         <span class="country-name">${name}</span> has no population data
         for <span class="metric-secondary">${currentYear}</span> in this dataset.
       </p>
+      ${
+        metaLoading
+          ? '<p><span class="metric-secondary">Loading country profile...</span></p>'
+          : ""
+      }
     `;
     return;
   }
@@ -496,6 +824,52 @@ function showCountryPanel() {
       `
       }
     </p>
+    <hr style="border:0;border-top:1px solid rgba(120,150,200,0.25);margin:8px 0;" />
+    ${
+      restMeta && !restMeta.unavailable
+        ? `
+      ${
+        restMeta.flagPng || restMeta.coatPng
+          ? `
+      <div class="country-images">
+        ${
+          restMeta.flagPng
+            ? `<img class="country-thumb" src="${restMeta.flagPng}" alt="${restMeta.nameCommon || name} flag" />`
+            : ""
+        }
+        ${
+          restMeta.coatPng
+            ? `<img class="country-thumb" src="${restMeta.coatPng}" alt="${restMeta.nameCommon || name} emblem" />`
+            : ""
+        }
+      </div>
+      `
+          : ""
+      }
+      <p>
+        <span class="metric-label">Country profile (REST Countries):</span>
+        <span class="metric-secondary">${restMeta.flag || ""} ${restMeta.nameCommon || name}</span>
+      </p>
+      <p>
+        <span class="metric-label">Capital:</span>
+        <span class="metric-secondary">${restMeta.capital || "n/a"}</span>
+        &nbsp;|&nbsp;
+        <span class="metric-label">Region:</span>
+        <span class="metric-secondary">${restMeta.region || "n/a"}${restMeta.subregion ? ` (${restMeta.subregion})` : ""}</span>
+      </p>
+      <p>
+        <span class="metric-label">Languages:</span>
+        <span class="metric-secondary">${restMeta.languages}</span>
+      </p>
+      <p>
+        <span class="metric-label">Currencies:</span>
+        <span class="metric-secondary">${restMeta.currencies}</span>
+      </p>
+    `
+        : metaLoading
+          ? `<p><span class="metric-secondary">Loading country profile...</span></p>`
+          : `<p><span class="metric-secondary">Country profile unavailable from REST Countries.</span></p>`
+    }
   `;
 }
 
@@ -580,23 +954,10 @@ function updateLeaderboard() {
     .classed("selected", (d) => d.iso === selectedIso)
     .html((d, i) => {
       const currentRank = i + 1;
-      const prevRank = previousRankByIso.get(d.iso);
-      let deltaHtml = '<span class="rank-delta rank-same">--</span>';
-      if (prevRank != null) {
-        const delta = prevRank - currentRank;
-        if (delta > 0) {
-          deltaHtml = `<span class="rank-delta rank-up">+${delta}</span>`;
-        } else if (delta < 0) {
-          deltaHtml = `<span class="rank-delta rank-down">${delta}</span>`;
-        } else {
-          deltaHtml = '<span class="rank-delta rank-same">0</span>';
-        }
-      }
       return `
         <span class="leader-rank">${currentRank}.</span>
         <span class="leader-name">${d.name}</span>
         <span class="leader-value" style="color:${getLeaderboardValueColor(d.deltaAbs) || "#2a4f7f"}">+${d3.format(",.0f")(d.deltaAbs)} (${d.shareOfGlobalGrowth == null ? "n/a" : `${d3.format(".1f")(d.shareOfGlobalGrowth)}%`})</span>
-        ${deltaHtml}
       `;
     })
     .each(function (d, i) {
@@ -607,16 +968,7 @@ function updateLeaderboard() {
       d3.select(this).style("transform", `translateY(${deltaRank * rowHeight}px)`);
     })
     .on("click", (_, d) => {
-      const iso = d.iso;
-      const feature = countries.find((f) => getIsoFromFeature(f) === iso);
-      if (!feature) return;
-      selectedIso = iso;
-      selectedFeature = feature;
-      jumpButton.disabled = false;
-      showCountryPanel();
-      updateCountryTrend();
-      centerOnSelected();
-      updateLeaderboard();
+      focusCountryByIso(d.iso);
     });
 
   requestAnimationFrame(() => {
@@ -654,6 +1006,7 @@ slider.addEventListener("input", (e) => {
   updateCountryTrend();
   updateLeaderboard();
   updateTrendYearLine();
+  updateEventContext();
 });
 
 speedSlider.addEventListener("input", (e) => {
@@ -670,6 +1023,14 @@ playButton.addEventListener("click", () => {
     stopAnimation();
   } else {
     startAnimation();
+  }
+});
+
+spinButton.addEventListener("click", () => {
+  if (spinTimer) {
+    stopSpin();
+  } else {
+    startSpin();
   }
 });
 
@@ -696,6 +1057,7 @@ function startAnimation() {
     updateCountryTrend();
     updateLeaderboard();
     updateTrendYearLine();
+    updateEventContext();
   }, intervalMs);
 }
 
@@ -708,9 +1070,38 @@ function stopAnimation() {
   }
 }
 
+function startSpin() {
+  spinButton.textContent = "Stop spin";
+  spinButton.classList.remove("paused");
+  if (spinTimer) spinTimer.stop();
+
+  let lastTime = Date.now();
+  spinTimer = d3.timer(() => {
+    const now = Date.now();
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+    const rotate = projection.rotate();
+    projection.rotate([rotate[0] + spinSpeedDegPerSec * dt, rotate[1], rotate[2]]);
+    redrawGlobe();
+  });
+}
+
+function stopSpin() {
+  spinButton.textContent = "Spin globe";
+  spinButton.classList.add("paused");
+  if (spinTimer) {
+    spinTimer.stop();
+    spinTimer = null;
+  }
+}
+
 // --- Drag to rotate globe ---
 const drag = d3
   .drag()
+  .on("start", () => {
+    // Manual interaction should take priority over auto-spin.
+    if (spinTimer) stopSpin();
+  })
   .on("drag", (event) => {
     const rotate = projection.rotate();
     const k = 0.25;
@@ -797,9 +1188,11 @@ Promise.all([
 
   initLegend();
   buildGlobalTrend();
+  renderEventTimeline();
   updateFills();
   updateLeaderboard();
   showCountryPanel();
+  updateEventContext();
 });
 
 
